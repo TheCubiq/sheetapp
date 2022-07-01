@@ -1,49 +1,126 @@
-import React, { useRef, useState, useEffect } from "react";
-import { Animated, Text, ScrollView, View } from "react-native";
+import React from "react";
+import {
+  Button,
+  Text,
+  PanResponder,
+  useWindowDimensions,
+  View,
+  StyleSheet,
+} from "react-native";
+import {
+  GestureHandlerRootView,
+  PanGestureHandler,
+} from "react-native-gesture-handler";
+
+import Animated, {
+  useAnimatedGestureHandler,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from "react-native-reanimated";
+
+const SPRING_CONFIG = {
+  damping: 80,
+  overshootClamping: true,
+  restDisplacementThreshold: 0.1,
+  restSpeedThreshold: 0.1,
+  stiffness: 500,
+};
 
 export default () => {
-  const scrolling = useRef(new Animated.Value(0)).current;
-  const translation = scrolling.interpolate({
-    inputRange: [100, 200],
-    outputRange: [-100, 0],
-    extrapolate: "clamp"
+  const dimensions = useWindowDimensions();
+
+  const top = useSharedValue(dimensions.height);
+
+  const style = useAnimatedStyle(() => {
+    return {
+      top: withSpring(top.value, SPRING_CONFIG),
+    };
+  });
+
+  const gestureHandler = useAnimatedGestureHandler({
+    onStart(_, context) {
+      context.startTop = top.value;
+    },
+    onActive(event, context) {
+      top.value = context.startTop + event.translationY;
+    },
+    onEnd() {
+      if (top.value > dimensions.height / 2 + 200) {
+        top.value = dimensions.height - 100;
+      } else if (top.value < dimensions.height / 2 - 200) {
+        top.value = 0;
+      } else {
+        top.value = dimensions.height / 2;
+      }
+    },
   });
   return (
     <>
-      <Animated.View
+      <GestureHandlerRootView
         style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 80,
-          backgroundColor: "tomato",
-          transform: [
-            {
-              translateY: translation,
-            },
-          ],
+          flex: 1,
         }}
       >
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <Text 
-            style={{
-              fontSize: 50,
+        <View style={styles.container}>
+          <Button
+            style={styles.btn}
+            title="Close sheet"
+            onPress={() => {
+              top.value = withSpring(dimensions.height, SPRING_CONFIG);
             }}
-          >Header</Text>
+          />
+          <Button
+            title="Open sheet"
+            onPress={() => {
+              top.value = withSpring(dimensions.height / 2, SPRING_CONFIG);
+            }}
+          />
         </View>
-      </Animated.View>
-
-      <Animated.ScrollView
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrolling } } }],
-          { useNativeDriver: true }
-        )}
-        scrollEventThrottle={16}
-        style={{ flex: 1 }}
-      >
-        <View style={{ flex: 1, height: 1500 }} />
-      </Animated.ScrollView>
+        <PanGestureHandler onGestureEvent={gestureHandler}>
+          <Animated.View style={[styles.btsheed, style]}>
+            <Text
+              style={{
+                color: "white",
+                fontSize: 40,
+              }}
+            >
+              Sheet
+            </Text>
+          </Animated.View>
+        </PanGestureHandler>
+      </GestureHandlerRootView>
     </>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  btn: {
+    backgroundColor: "red",
+    padding: 10,
+    margin: 10,
+    borderRadius: 10,
+  },
+  btsheed: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#001e44",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: "black",
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.5,
+    shadowRadius: 3,
+    elevation: 5,
+    padding: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});

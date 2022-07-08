@@ -6,8 +6,14 @@
         {
             "label": "Task: start expo",
             "type": "shell",
+            "command": "expo start",
+            "problemMatcher": []
+        },
+        {
+            "label": "Task: start expo [tunnel]",
+            "type": "shell",
             "command": "expo start --tunnel",
             "problemMatcher": []
-        }
+        },
     ]
 }
